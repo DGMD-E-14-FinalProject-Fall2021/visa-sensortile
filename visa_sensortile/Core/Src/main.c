@@ -196,16 +196,14 @@ int main(void)
       setConnectable();
       set_connectable = FALSE;
     }
+
+    us100_data_available();
     
     /* Environmental Data */
     if(SendEnv) 
     {
       SendEnv=0;
       SendEnvironmentalData();
-    }
-    
-  	if (us100_data_available()) {
-    		distance = us100_get_distance();
     }
 
     /* Wait for Interrupt */
@@ -337,7 +335,13 @@ static void SendEnvironmentalData(void)
     uint16_t HumToSend=0;
     int16_t Temp2ToSend=0,Temp1ToSend=0;
     int32_t decPart, intPart;
+    uint16_t distance = 0;
     
+    if (US100_ENABLE) {
+    	distance = us100_get_distance();
+    	Temp1ToSend = distance;
+    }
+
     if(TargetBoardFeatures.HandlePressSensor) 
     {
       BSP_ENV_SENSOR_GetValue(LPS22HB_0, ENV_PRESSURE,(float *)&SensorValue);
@@ -409,12 +413,12 @@ static void SendEnvironmentalData(void)
     } 
     else if(TargetBoardFeatures.NumTempSensors==1)
     {
-      if (BSP_ENV_SENSOR_GetValue(HTS221_0, ENV_TEMPERATURE,(float *)&SensorValue)!=BSP_ERROR_NONE)
-      {
-        BSP_ENV_SENSOR_GetValue(LPS22HB_0, ENV_TEMPERATURE,(float *)&SensorValue);
-      }
-      MCR_BLUEMS_F2I_1D(SensorValue, intPart, decPart);
-      Temp1ToSend = intPart*10+decPart;
+//      if (BSP_ENV_SENSOR_GetValue(HTS221_0, ENV_TEMPERATURE,(float *)&SensorValue)!=BSP_ERROR_NONE)
+//      {
+//        BSP_ENV_SENSOR_GetValue(LPS22HB_0, ENV_TEMPERATURE,(float *)&SensorValue);
+//      }
+//      MCR_BLUEMS_F2I_1D(SensorValue, intPart, decPart);
+//      Temp1ToSend = intPart*10+decPart;
 #ifdef ENABLE_USB_DEBUG_NOTIFY_TRAMISSION
       if(W2ST_CHECK_CONNECTION(W2ST_CONNECT_STD_TERM))
       {
