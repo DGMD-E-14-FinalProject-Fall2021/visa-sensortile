@@ -16,6 +16,7 @@ RM := rm -rf
 -include Middlewares/STM32_USBD_Library/Core/Src/subdir.mk
 -include Middlewares/STM32_USBD_Library/Class/Src/subdir.mk
 -include Drivers/STM32L4xx_HAL_Driver/Src/subdir.mk
+-include Drivers/BSP/US100/Src/subdir.mk
 -include Drivers/BSP/SensorTile/Src/subdir.mk
 -include Drivers/BSP/Components/Src/subdir.mk
 -include Core/Startup/subdir.mk

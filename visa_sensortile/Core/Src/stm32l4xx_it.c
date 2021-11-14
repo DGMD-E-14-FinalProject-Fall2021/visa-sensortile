@@ -54,6 +54,8 @@ extern PCD_HandleTypeDef hpcd;
 extern TIM_HandleTypeDef  TimHandle;
 extern I2C_HandleTypeDef hbusi2c3;
 extern EXTI_HandleTypeDef hexti5;
+extern DMA_HandleTypeDef hdma_uart5_rx;
+
 
 
 /******************************************************************************/
@@ -205,6 +207,20 @@ void SysTick_Handler(void)
 /*  available peripheral interrupt handler's name please refer to the startup */
 /*  file (startup_stm32l4xxxx.s).                                             */
 /******************************************************************************/
+
+/**
+  * @brief This function handles DMA2 channel2 global interrupt.
+  */
+void DMA2_Channel2_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Channel2_IRQn 0 */
+
+  /* USER CODE END DMA2_Channel2_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_uart5_rx);
+  /* USER CODE BEGIN DMA2_Channel2_IRQn 1 */
+
+  /* USER CODE END DMA2_Channel2_IRQn 1 */
+}
 
 /**
   * @brief  This function handles TIM1 Interrupt request

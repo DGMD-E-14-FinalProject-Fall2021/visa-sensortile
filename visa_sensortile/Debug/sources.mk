@@ -24,6 +24,7 @@ Core/Src \
 Core/Startup \
 Drivers/BSP/Components/Src \
 Drivers/BSP/SensorTile/Src \
+Drivers/BSP/US100/Src \
 Drivers/STM32L4xx_HAL_Driver/Src \
 Middlewares/STM32_USBD_Library/Class/Src \
 Middlewares/STM32_USBD_Library/Core/Src \
