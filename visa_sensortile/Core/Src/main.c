@@ -49,6 +49,7 @@
 #include "main.h"
 #include "sensor_service.h"
 #include "bluenrg_utils.h"
+#include "app_US100.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -72,6 +73,9 @@ TIM_HandleTypeDef TimCCHandle;
 
 uint8_t bdaddr[6];
 
+UART_HandleTypeDef huart5;
+DMA_HandleTypeDef hdma_uart5_rx;
+
 /* Private variables ---------------------------------------------------------*/
 static volatile uint32_t SendEnv = 0;
 
@@ -82,6 +86,9 @@ static void Init_BlueNRG_Custom_Services(void);
 static void Init_BlueNRG_Stack(void);
 static void InitTimers(void);
 static void SendEnvironmentalData(void);
+static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
+static void MX_UART5_Init(void);
 
 //uint8_t CDC_Fill_Buffer(uint8_t* Buf, uint32_t TotalLen){}
 
@@ -138,6 +145,14 @@ int main(void)
   /* Initialize the BlueNRG Custom services */
   Init_BlueNRG_Custom_Services();  
   
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_UART5_Init();
+  us100_init(&huart5, &hdma_uart5_rx);
+
+  /* US-100 distance */
+  int distance = 0;
+
   /* initialize timers */
   InitTimers();
   
@@ -189,9 +204,78 @@ int main(void)
       SendEnvironmentalData();
     }
     
+  	if (us100_data_available()) {
+    		distance = us100_get_distance();
+    }
+
     /* Wait for Interrupt */
     __WFI();
   }
+}
+
+/**
+  * @brief UART5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART5_Init(void)
+{
+
+  /* USER CODE BEGIN UART5_Init 0 */
+
+  /* USER CODE END UART5_Init 0 */
+
+  /* USER CODE BEGIN UART5_Init 1 */
+
+  /* USER CODE END UART5_Init 1 */
+  huart5.Instance = UART5;
+  huart5.Init.BaudRate = 9600;
+  huart5.Init.WordLength = UART_WORDLENGTH_8B;
+  huart5.Init.StopBits = UART_STOPBITS_1;
+  huart5.Init.Parity = UART_PARITY_NONE;
+  huart5.Init.Mode = UART_MODE_TX_RX;
+  huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart5.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart5.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart5.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART5_Init 2 */
+
+  /* USER CODE END UART5_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
+
+}
+
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPIO_Init(void)
+{
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+
 }
 
 /**

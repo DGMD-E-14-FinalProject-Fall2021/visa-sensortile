@@ -64,6 +64,7 @@ void EXTI9_5_IRQHandler(void);
 void EXTI2_IRQHandler( void );
 void I2C3_EV_IRQHandler(void);
 void I2C3_ER_IRQHandler(void);
+void DMA2_Channel2_IRQHandler(void);
 
 #ifdef __cplusplus
 }
