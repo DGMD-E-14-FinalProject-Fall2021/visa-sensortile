@@ -85,7 +85,8 @@ Core/Src/sensor_service.o: ../Core/Src/sensor_service.c \
  ../Core/Inc/main.h ../Core/Inc/console.h \
  /Users/stephensheldon/STM32CubeIDE/visa_sensortile/visa_sensortile/Middlewares/X-CUBE-BLE1_BlueNRG-MS/includes/bluenrg_utils.h \
  /Users/stephensheldon/STM32CubeIDE/visa_sensortile/visa_sensortile/Middlewares/X-CUBE-BLE1_BlueNRG-MS/includes/bluenrg_l2cap_aci.h \
- ../Core/Inc/uuid_ble_service.h
+ ../Core/Inc/uuid_ble_service.h \
+ /Users/stephensheldon/STM32CubeIDE/visa_sensortile/visa_sensortile/Drivers/BSP/US100/Inc/app_US100.h
 
 ../Core/Inc/TargetFeatures.h:
 
@@ -272,3 +273,5 @@ Core/Src/sensor_service.o: ../Core/Src/sensor_service.c \
 /Users/stephensheldon/STM32CubeIDE/visa_sensortile/visa_sensortile/Middlewares/X-CUBE-BLE1_BlueNRG-MS/includes/bluenrg_l2cap_aci.h:
 
 ../Core/Inc/uuid_ble_service.h:
+
+/Users/stephensheldon/STM32CubeIDE/visa_sensortile/visa_sensortile/Drivers/BSP/US100/Inc/app_US100.h:

@@ -48,6 +48,7 @@
 #include "bluenrg_utils.h"
 #include "bluenrg_l2cap_aci.h"
 #include "uuid_ble_service.h"
+#include "app_US100.h"
 
 /* Exported variables ---------------------------------------------------------*/
 int connected = FALSE;
@@ -628,7 +629,13 @@ void Read_Request_CB(uint16_t handle)
     uint16_t HumToSend=0;
     int16_t Temp2ToSend=0,Temp1ToSend=0;
     int32_t decPart, intPart;
+    uint16_t distance = 0;
     
+    if (US100_ENABLE) {
+    	distance = us100_get_distance();
+    	Temp1ToSend = distance;
+    }
+
     if(TargetBoardFeatures.HandlePressSensor) 
     {
       BSP_ENV_SENSOR_GetValue(LPS22HB_0, ENV_PRESSURE,(float *)&SensorValue);
@@ -655,12 +662,14 @@ void Read_Request_CB(uint16_t handle)
     } 
     else if(TargetBoardFeatures.NumTempSensors==1)
     {
+    	/*
       if (BSP_ENV_SENSOR_GetValue(HTS221_0, ENV_TEMPERATURE,(float *)&SensorValue)!=BSP_ERROR_NONE)
       {
         BSP_ENV_SENSOR_GetValue(LPS22HB_0, ENV_TEMPERATURE,(float *)&SensorValue);
       }
       MCR_BLUEMS_F2I_1D(SensorValue, intPart, decPart);
       Temp1ToSend = intPart*10+decPart;
+      */
     }
     
     Environmental_Update(PressToSend,HumToSend,Temp2ToSend,Temp1ToSend);
