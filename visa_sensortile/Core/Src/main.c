@@ -150,9 +150,6 @@ int main(void)
   MX_UART5_Init();
   us100_init(&huart5, &hdma_uart5_rx);
 
-  /* US-100 distance */
-  int distance = 0;
-
   /* initialize timers */
   InitTimers();
   
