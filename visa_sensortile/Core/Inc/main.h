@@ -103,8 +103,8 @@ extern void Error_Handler(void);
 
 /* Exported defines and variables  ------------------------------------------------------- */
 
-//10kHz/2 For Environmental data@2Hz
-#define uhCCR1_Val  5000
+//10kHz/20 For Environmental data@20Hz
+#define uhCCR1_Val  500
 //10kHz/20  For Acc/Gyromag@20Hz
 #define uhCCR4_Val  500
 
