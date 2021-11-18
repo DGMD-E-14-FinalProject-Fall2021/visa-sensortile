@@ -50,6 +50,7 @@
 #include "sensor_service.h"
 #include "bluenrg_utils.h"
 #include "app_US100.h"
+#include "app_DRV2605L.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -76,6 +77,8 @@ uint8_t bdaddr[6];
 UART_HandleTypeDef huart5;
 DMA_HandleTypeDef hdma_uart5_rx;
 
+I2C_HandleTypeDef hi2c3;
+
 /* Private variables ---------------------------------------------------------*/
 static volatile uint32_t SendEnv = 0;
 
@@ -89,6 +92,7 @@ static void SendEnvironmentalData(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_UART5_Init(void);
+static void MX_I2C3_Init(void);
 
 //uint8_t CDC_Fill_Buffer(uint8_t* Buf, uint32_t TotalLen){}
 
@@ -146,9 +150,24 @@ int main(void)
   Init_BlueNRG_Custom_Services();  
   
   MX_GPIO_Init();
+
+  /* Initialize DMA and UART for US100 */
   MX_DMA_Init();
   MX_UART5_Init();
   us100_init(&huart5, &hdma_uart5_rx);
+
+  /* Initialize I2C for drv2605l */
+  MX_I2C3_Init();
+  HAL_I2C_Init(&hi2c3);
+
+  /* drv2605l setup */
+  drv2605l_init(&hi2c3); // Initialize the drv2605l with the correct I2C config
+
+ 	drv2605l_set_mode(0x0); // Set mode to internal trigger input
+
+ 	drv2605l_motor_select(0x36); // ERM Motor
+
+ 	drv2605l_set_library(0x02); // Select ERM library. 1-5 & 7 for ERM motors, 6 for LRA motors
 
   /* initialize timers */
   InitTimers();
@@ -240,6 +259,52 @@ static void MX_UART5_Init(void)
   /* USER CODE BEGIN UART5_Init 2 */
 
   /* USER CODE END UART5_Init 2 */
+
+}
+
+/**
+  * @brief I2C3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C3_Init(void)
+{
+
+  /* USER CODE BEGIN I2C3_Init 0 */
+
+  /* USER CODE END I2C3_Init 0 */
+
+  /* USER CODE BEGIN I2C3_Init 1 */
+
+  /* USER CODE END I2C3_Init 1 */
+  hi2c3.Instance = I2C3;
+  hi2c3.Init.Timing = 0x10909CEC;
+  hi2c3.Init.OwnAddress1 = 0;
+  hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c3.Init.OwnAddress2 = 0;
+  hi2c3.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C3_Init 2 */
+
+  /* USER CODE END I2C3_Init 2 */
 
 }
 
