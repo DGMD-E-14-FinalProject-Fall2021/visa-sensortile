@@ -206,7 +206,7 @@ tBleStatus Stderr_Update(uint8_t *data,uint8_t length)
 /**
 * @brief  Update Terminal characteristic value
 * @param  uint8_t *data string to write
-* @param  uint8_t lenght lengt of string to write
+* @param  uint8_t length of string to write
 * @retval tBleStatus      Status
 */
 tBleStatus Term_Update(uint8_t *data,uint8_t length)

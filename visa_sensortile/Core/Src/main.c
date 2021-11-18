@@ -282,7 +282,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 {
   uint32_t uhCapture=0;
   
-  /* TIM1_CH1 toggling with frequency = 2Hz */
+  /* TIM1_CH1 toggling with frequency = 20Hz */
   if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
   {
     uhCapture = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
