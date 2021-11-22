@@ -70,7 +70,7 @@ uint32_t ConnectionBleStatus  =0;
 uint8_t BufferToWrite[256];
 int32_t BytesToWrite;
 
-TIM_HandleTypeDef TimCCHandle;
+TIM_HandleTypeDef Tim1CCHandle;
 
 uint8_t bdaddr[6];
 
@@ -352,8 +352,9 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
   {
     uhCapture = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
     /* Set the Capture Compare Register value */
-    __HAL_TIM_SET_COMPARE(&TimCCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
-    SendEnv=1;
+    __HAL_TIM_SET_COMPARE(&Tim1CCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
+//    SendEnv=1;
+    SendHaptic=1;
   }
 }
 
@@ -529,12 +530,12 @@ static void InitTimers(void)
   
   /* Set TIM1 instance (Motion)*/
   /* Set TIM1 instance */
-  TimCCHandle.Instance = TIM1;
-  TimCCHandle.Init.Period        = 65535;
-  TimCCHandle.Init.Prescaler     = uwPrescalerValue;
-  TimCCHandle.Init.ClockDivision = 0;
-  TimCCHandle.Init.CounterMode   = TIM_COUNTERMODE_UP;
-  if(HAL_TIM_OC_Init(&TimCCHandle) != HAL_OK)
+  Tim1CCHandle.Instance = TIM1;
+  Tim1CCHandle.Init.Period        = 65535;
+  Tim1CCHandle.Init.Prescaler     = uwPrescalerValue;
+  Tim1CCHandle.Init.ClockDivision = 0;
+  Tim1CCHandle.Init.CounterMode   = TIM_COUNTERMODE_UP;
+  if(HAL_TIM_OC_Init(&Tim1CCHandle) != HAL_OK)
   {
     /* Initialization Error */
     Error_Handler();
@@ -547,7 +548,7 @@ static void InitTimers(void)
   
   /* Output Compare Toggle Mode configuration: Channel1 */
   sConfig.Pulse = uhCCR1_Val;
-  if(HAL_TIM_OC_ConfigChannel(&TimCCHandle, &sConfig, TIM_CHANNEL_1) != HAL_OK)
+  if(HAL_TIM_OC_ConfigChannel(&Tim1CCHandle, &sConfig, TIM_CHANNEL_1) != HAL_OK)
   {
     /* Configuration Error */
     Error_Handler();

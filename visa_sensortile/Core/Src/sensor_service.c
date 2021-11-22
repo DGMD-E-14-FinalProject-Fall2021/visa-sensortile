@@ -57,7 +57,7 @@ uint8_t set_connectable = TRUE;
 /* Imported Variables -------------------------------------------------------------*/
 extern uint32_t ConnectionBleStatus;
 
-extern TIM_HandleTypeDef    TimCCHandle;
+extern TIM_HandleTypeDef    Tim1CCHandle;
 
 extern uint8_t bdaddr[6];
 
@@ -608,7 +608,7 @@ static void GAP_DisconnectionComplete_CB(void)
 
   ConnectionBleStatus=0;
 
-  if(HAL_TIM_OC_Stop_IT(&TimCCHandle, TIM_CHANNEL_1) != HAL_OK){
+  if(HAL_TIM_OC_Stop_IT(&Tim1CCHandle, TIM_CHANNEL_1) != HAL_OK){
     /* Stopping Error */
     Error_Handler();
   }
@@ -717,7 +717,6 @@ void Attribute_Modified_CB(uint16_t attr_handle, uint8_t * att_data, uint8_t dat
       W2ST_ON_CONNECTION(W2ST_CONNECT_ENV);
       
       /* Start the TIM Base generation in interrupt mode */
-      if(HAL_TIM_OC_Start_IT(&TimCCHandle, TIM_CHANNEL_1) != HAL_OK)
       {
         /* Starting Error */
         Error_Handler();
@@ -725,17 +724,21 @@ void Attribute_Modified_CB(uint16_t attr_handle, uint8_t * att_data, uint8_t dat
       
       /* Set the new Capture compare value */
       {
-        uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&TimCCHandle);
         /* Set the Capture Compare Register value */
-        __HAL_TIM_SET_COMPARE(&TimCCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
       }
     } 
+//      if(HAL_TIM_OC_Start_IT(&Tim1CCHandle, TIM_CHANNEL_1) != HAL_OK)
+//        uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim1CCHandle);
+//        __HAL_TIM_SET_COMPARE(&Tim1CCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
+			if(HAL_TIM_OC_Start_IT(&Tim1CCHandle, TIM_CHANNEL_1) != HAL_OK)
+				uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim1CCHandle);
+				__HAL_TIM_SET_COMPARE(&Tim1CCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
     else if (att_data[0] == 0)
     {
       W2ST_OFF_CONNECTION(W2ST_CONNECT_ENV);
       
       /* Stop the TIM Base generation in interrupt mode */
-      if(HAL_TIM_OC_Stop_IT(&TimCCHandle, TIM_CHANNEL_1) != HAL_OK)
+      if(HAL_TIM_OC_Stop_IT(&Tim1CCHandle, TIM_CHANNEL_1) != HAL_OK)
       {
         /* Stopping Error */
         Error_Handler();

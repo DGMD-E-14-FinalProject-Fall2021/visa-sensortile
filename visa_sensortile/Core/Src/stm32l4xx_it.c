@@ -48,7 +48,7 @@
 #include "stm32l4xx_it.h"
 
 /* Imported variables ---------------------------------------------------------*/
-extern TIM_HandleTypeDef TimCCHandle;
+extern TIM_HandleTypeDef Tim1CCHandle;
 
 extern PCD_HandleTypeDef hpcd;
 extern TIM_HandleTypeDef  TimHandle;
@@ -229,7 +229,7 @@ void DMA2_Channel2_IRQHandler(void)
   */
 void TIM1_CC_IRQHandler(void)
 {
-  HAL_TIM_IRQHandler(&TimCCHandle);
+  HAL_TIM_IRQHandler(&Tim1CCHandle);
 }
 
 /**
