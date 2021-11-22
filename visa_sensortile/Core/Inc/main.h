@@ -105,7 +105,7 @@ extern void Error_Handler(void);
 
 //10kHz/20 For Environmental data@20Hz
 #define uhCCR1_Val  500
-//10kHz/20  For Acc/Gyromag@20Hz
+//10kHz/20  For Haptic@20Hz
 #define uhCCR4_Val  500
 
   #define BLUEMSYS_CHECK_JUMP_TO_BOOTLOADER ((uint32_t)0x12345678)

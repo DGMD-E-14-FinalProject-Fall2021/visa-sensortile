@@ -49,6 +49,7 @@
 #include "bluenrg_l2cap_aci.h"
 #include "uuid_ble_service.h"
 #include "app_US100.h"
+#include "app_DRV2605L.h"
 
 /* Exported variables ---------------------------------------------------------*/
 int connected = FALSE;
@@ -58,6 +59,7 @@ uint8_t set_connectable = TRUE;
 extern uint32_t ConnectionBleStatus;
 
 extern TIM_HandleTypeDef    Tim1CCHandle;
+extern TIM_HandleTypeDef    Tim8CCHandle;
 
 extern uint8_t bdaddr[6];
 
@@ -65,6 +67,7 @@ extern uint8_t bdaddr[6];
 static uint16_t HWServW2STHandle;
 static uint16_t EnvironmentalCharHandle;
 static uint16_t LedCharHandle;
+static uint16_t HapticCharHandle;
 
 static uint16_t ConfigServW2STHandle;
 static uint16_t ConfigCharHandle;
@@ -336,27 +339,27 @@ tBleStatus Add_HWServW2ST_Service(void)
   {
     goto fail;
   }
-  
+
   /* Fill the Environmental BLE Characteristc */
   COPY_ENVIRONMENTAL_W2ST_CHAR_UUID(uuid);
-  if(TargetBoardFeatures.NumTempSensors==2) 
+  if(TargetBoardFeatures.NumTempSensors==2)
   {
     uuid[14] |= 0x05; /* Two Temperature values*/
     EnvironmentalCharSize+=2*2;
-  } 
-  else if(TargetBoardFeatures.NumTempSensors==1) 
+  }
+  if(TargetBoardFeatures.NumTempSensors==1)
   {
     uuid[14] |= 0x04; /* One Temperature value*/
     EnvironmentalCharSize+=2;
   }
   
-  if(TargetBoardFeatures.HandleHumSensor) 
+  if(TargetBoardFeatures.HandleHumSensor)
   {
     uuid[14] |= 0x08; /* Humidity */
     EnvironmentalCharSize+=2;
   }
   
-  if(TargetBoardFeatures.HandlePressSensor) 
+  if(TargetBoardFeatures.HandlePressSensor)
   {
     uuid[14] |= 0x10; /* Pressure value*/
     EnvironmentalCharSize+=4;
@@ -373,6 +376,19 @@ tBleStatus Add_HWServW2ST_Service(void)
     goto fail;
   }
   
+  /* Fill the Haptic BLE characteristic */
+  COPY_HAPTIC_W2ST_CHAR_UUID(uuid);
+
+  ret = aci_gatt_add_char(HWServW2STHandle, UUID_TYPE_128, uuid, 4,
+  												CHAR_PROP_NOTIFY|CHAR_PROP_READ,
+													ATTR_PERMISSION_NONE,
+													GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
+													16,0, &HapticCharHandle);
+
+  if (ret != BLE_STATUS_SUCCESS) {
+  	goto fail;
+  }
+
   COPY_LED_W2ST_CHAR_UUID(uuid);
   ret =  aci_gatt_add_char(HWServW2STHandle, UUID_TYPE_128, uuid, 2+1,
                            CHAR_PROP_NOTIFY | CHAR_PROP_READ,
@@ -412,27 +428,27 @@ tBleStatus Environmental_Update(int32_t Press,uint16_t Hum,int16_t Temp2,int16_t
   BuffPos=2;
   
   
-  if(TargetBoardFeatures.HandlePressSensor) 
+  if(TargetBoardFeatures.HandlePressSensor)
   {
     STORE_LE_32(buff+BuffPos,Press);
     BuffPos+=4;
   }
   
-  if(TargetBoardFeatures.HandleHumSensor) 
+  if(TargetBoardFeatures.HandleHumSensor)
   {
     STORE_LE_16(buff+BuffPos,Hum);
     BuffPos+=2;
   }
-  
-  if(TargetBoardFeatures.NumTempSensors==2) 
+
+  if(TargetBoardFeatures.NumTempSensors==2)
   {
     STORE_LE_16(buff+BuffPos,Temp2);
     BuffPos+=2;
-    
+
     STORE_LE_16(buff+BuffPos,Temp1);
     BuffPos+=2;
-  } 
-  else if(TargetBoardFeatures.NumTempSensors==1) 
+  }
+  if(TargetBoardFeatures.NumTempSensors==1)
   {
     STORE_LE_16(buff+BuffPos,Temp1);
     BuffPos+=2;
@@ -532,18 +548,18 @@ void setConnectable(void)
   if(TargetBoardFeatures.NumTempSensors==2)
   {
     manuf_data[17] |= 0x05; /* Two Temperature values*/
-  } 
+  }
   else if(TargetBoardFeatures.NumTempSensors==1) 
   {
     manuf_data[17] |= 0x04; /* One Temperature value*/
   }
   
-  if(TargetBoardFeatures.HandleHumSensor) 
+  if(TargetBoardFeatures.HandleHumSensor)
   {
     manuf_data[17] |= 0x08; /* Humidity */
   }
-  
-  if(TargetBoardFeatures.HandlePressSensor) 
+
+  if(TargetBoardFeatures.HandlePressSensor)
   {
     manuf_data[17] |= 0x10; /* Pressure value*/
   }
@@ -636,40 +652,29 @@ void Read_Request_CB(uint16_t handle)
     	Temp1ToSend = distance;
     }
 
-    if(TargetBoardFeatures.HandlePressSensor) 
+    if(TargetBoardFeatures.HandlePressSensor)
     {
       BSP_ENV_SENSOR_GetValue(LPS22HB_0, ENV_PRESSURE,(float *)&SensorValue);
       MCR_BLUEMS_F2I_2D(SensorValue, intPart, decPart);
       PressToSend=intPart*100+decPart;
     }
-    
+
     if(TargetBoardFeatures.HandleHumSensor)
     {
       BSP_ENV_SENSOR_GetValue(HTS221_0, ENV_HUMIDITY, (float *)&SensorValue);
       MCR_BLUEMS_F2I_1D(SensorValue, intPart, decPart);
       HumToSend = intPart*10+decPart;
     }
-    
-    if(TargetBoardFeatures.NumTempSensors==2) 
+
+    if(TargetBoardFeatures.NumTempSensors==2)
     {
       BSP_ENV_SENSOR_GetValue(HTS221_0, ENV_TEMPERATURE,(float *)&SensorValue);
       MCR_BLUEMS_F2I_1D(SensorValue, intPart, decPart);
-      Temp1ToSend = intPart*10+decPart; 
-      
+      Temp1ToSend = intPart*10+decPart;
+
       BSP_ENV_SENSOR_GetValue(LPS22HB_0, ENV_TEMPERATURE,(float *)&SensorValue);
       MCR_BLUEMS_F2I_1D(SensorValue, intPart, decPart);
       Temp2ToSend = intPart*10+decPart;
-    } 
-    else if(TargetBoardFeatures.NumTempSensors==1)
-    {
-    	/*
-      if (BSP_ENV_SENSOR_GetValue(HTS221_0, ENV_TEMPERATURE,(float *)&SensorValue)!=BSP_ERROR_NONE)
-      {
-        BSP_ENV_SENSOR_GetValue(LPS22HB_0, ENV_TEMPERATURE,(float *)&SensorValue);
-      }
-      MCR_BLUEMS_F2I_1D(SensorValue, intPart, decPart);
-      Temp1ToSend = intPart*10+decPart;
-      */
     }
     
     Environmental_Update(PressToSend,HumToSend,Temp2ToSend,Temp1ToSend);
@@ -712,27 +717,24 @@ void Attribute_Modified_CB(uint16_t attr_handle, uint8_t * att_data, uint8_t dat
   }
   else if(attr_handle == EnvironmentalCharHandle + 2)
   {
-    if (att_data[0] == 01) 
+    if (att_data[0] == 01)
     {
       W2ST_ON_CONNECTION(W2ST_CONNECT_ENV);
-      
+
       /* Start the TIM Base generation in interrupt mode */
+      if(HAL_TIM_OC_Start_IT(&Tim1CCHandle, TIM_CHANNEL_1) != HAL_OK)
       {
         /* Starting Error */
         Error_Handler();
       }
-      
+
       /* Set the new Capture compare value */
       {
+        uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim1CCHandle);
         /* Set the Capture Compare Register value */
+        __HAL_TIM_SET_COMPARE(&Tim1CCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
       }
-    } 
-//      if(HAL_TIM_OC_Start_IT(&Tim1CCHandle, TIM_CHANNEL_1) != HAL_OK)
-//        uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim1CCHandle);
-//        __HAL_TIM_SET_COMPARE(&Tim1CCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
-			if(HAL_TIM_OC_Start_IT(&Tim1CCHandle, TIM_CHANNEL_1) != HAL_OK)
-				uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim1CCHandle);
-				__HAL_TIM_SET_COMPARE(&Tim1CCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
+    }
     else if (att_data[0] == 0)
     {
       W2ST_OFF_CONNECTION(W2ST_CONNECT_ENV);
@@ -744,15 +746,38 @@ void Attribute_Modified_CB(uint16_t attr_handle, uint8_t * att_data, uint8_t dat
         Error_Handler();
       }
     }
-#ifdef ENABLE_USB_DEBUG_CONNECTION
-    if(W2ST_CHECK_CONNECTION(W2ST_CONNECT_STD_TERM)) 
-    {
-      BytesToWrite =sprintf((char *)BufferToWrite,"--->Env=%s\r\n", W2ST_CHECK_CONNECTION(W2ST_CONNECT_ENV) ? "ON" : "OFF");
-      Term_Update(BufferToWrite,BytesToWrite);
-    } 
-    else
-      STLBLE_PRINTF("--->Env=%s\r\n", W2ST_CHECK_CONNECTION(W2ST_CONNECT_ENV) ? "ON" : "OFF");
-#endif /* ENABLE_USB_DEBUG_CONNECTION */
+  }
+  else if (attr_handle == EnvironmentalCharHandle + 5) {
+  	if (att_data[0] == 01)
+  	{
+  		W2ST_ON_CONNECTION(W2ST_CONNECT_HAPTIC);
+
+
+  		/* Start the TIM Base generation in interrupt mode */
+  		if(HAL_TIM_OC_Start_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
+  		{
+  			/* Starting Error */
+  			Error_Handler();
+  		}
+
+  		/* Set the new Capture compare value */
+  		{
+  			uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim8CCHandle);
+  			/* Set the Capture Compare Register value */
+  			__HAL_TIM_SET_COMPARE(&Tim8CCHandle, TIM_CHANNEL_4, (uhCapture + uhCCR4_Val));
+  		}
+  	}
+	  else if (att_data[0] == 0)
+		{
+			W2ST_OFF_CONNECTION(W2ST_CONNECT_HAPTIC);
+
+			/* Stop the TIM Base generation in interrupt mode */
+			if(HAL_TIM_OC_Stop_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
+			{
+				/* Stopping Error */
+				Error_Handler();
+			}
+		}
   }
   else if(attr_handle == StdErrCharHandle + 2)
   {

@@ -49,6 +49,7 @@
 
 /* Imported variables ---------------------------------------------------------*/
 extern TIM_HandleTypeDef Tim1CCHandle;
+extern TIM_HandleTypeDef Tim8CCHandle;
 
 extern PCD_HandleTypeDef hpcd;
 extern TIM_HandleTypeDef  TimHandle;
@@ -230,6 +231,15 @@ void DMA2_Channel2_IRQHandler(void)
 void TIM1_CC_IRQHandler(void)
 {
   HAL_TIM_IRQHandler(&Tim1CCHandle);
+}
+
+/**
+ * @brief This function handles TIM8 Interrupt request
+ * @param None
+ * @retval None
+ */
+void TIM8_CC_IRQHandler(void) {
+	HAL_TIM_IRQHandler(&Tim8CCHandle);
 }
 
 /**

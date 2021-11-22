@@ -115,10 +115,10 @@ used in Console service */
 /* BLE Characteristic connection control */
 /* Environmental Data */
 #define W2ST_CONNECT_ENV           (1    )
+/* Haptic control */
+#define W2ST_CONNECT_HAPTIC           (1<<1 )
 /* LED status */
-#define W2ST_CONNECT_LED           (1<<1 )
-/* Acceleration/Gyroscope/Magneto */
-#define W2ST_CONNECT_ACC_GYRO_MAG  (1<<2 )
+#define W2ST_CONNECT_LED  (1<<2 )
 
 /* Standard Terminal */
 #define W2ST_CONNECT_STD_TERM      (1<<8 )
