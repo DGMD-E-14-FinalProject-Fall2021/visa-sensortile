@@ -42,15 +42,15 @@
 */
 
 /* Includes ------------------------------------------------------------------*/
+#include <DRV2605L.h>
 #include <stdio.h>
 #include <math.h>
 #include <limits.h>
+#include <US100.h>
 #include "TargetFeatures.h"
 #include "main.h"
 #include "sensor_service.h"
 #include "bluenrg_utils.h"
-#include "app_US100.h"
-#include "app_DRV2605L.h"
 #include "hand_navigation.h"
 
 /* Private typedef -----------------------------------------------------------*/

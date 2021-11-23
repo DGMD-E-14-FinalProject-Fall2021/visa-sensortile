@@ -5,7 +5,7 @@
  *  Author: Stephen Sheldon
  */
 
-#include "app_DRV2605L.h"
+#include <DRV2605L.h>
 
 static I2C_HandleTypeDef *hi2c;
 
