@@ -182,6 +182,7 @@ void drv2605l_set_library(uint8_t lib);
 void drv2605l_set_waveform(uint8_t seq, uint8_t wav);
 uint8_t drv2605l_get_status(void);
 void drv2605l_go(void);
+uint8_t drv2605l_waveform_active(void);
 void drv2605l_stop(void);
 
 #endif /* APP_APP_DRV2605L_H_ */

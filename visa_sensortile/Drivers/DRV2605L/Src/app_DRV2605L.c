@@ -110,6 +110,17 @@ void drv2605l_go(void)
 }
 
 /**
+ * Checks the GO bit to see if there is currently waveform sequence being played
+ * @return 1 if there is currently a waveform sequence being played
+ * 				 0 if no waveform sequence is being played
+ */
+uint8_t drv2605l_waveform_active(void) {
+	uint8_t go_status;
+	drv2605l_read(GO_REG, &go_status);
+	return go_status;
+}
+
+/**
  * Sets the Go Register to stop executing the sequence of waveforms
  * stored within the sequence register.
  */

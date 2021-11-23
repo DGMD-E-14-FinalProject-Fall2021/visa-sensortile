@@ -51,6 +51,7 @@
 #include "bluenrg_utils.h"
 #include "app_US100.h"
 #include "app_DRV2605L.h"
+#include "hand_navigation.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -86,7 +87,6 @@ static volatile uint32_t SendHaptic = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
-
 static void Init_BlueNRG_Custom_Services(void);
 static void Init_BlueNRG_Stack(void);
 static void InitTimers(void);
@@ -216,7 +216,7 @@ int main(void)
       set_connectable = FALSE;
     }
 
-    us100_data_available();
+    us100_data_available(); // Query a request for distance data
     
     /* Environmental Data */
     if(SendEnv) 
@@ -225,6 +225,7 @@ int main(void)
       SendEnvironmentalData();
     }
 
+    /* Haptic feedback */
     if (SendHaptic) {
     	SendHaptic = 0;
     	send_haptic();
@@ -236,11 +237,19 @@ int main(void)
 }
 
 static void send_haptic(void) {
-	// Retrieve the current waveform
-	uint8_t waveform = get_navigation_waveform();
 
-	drv2605l_set_waveform(0, waveform); // Set register 0
-  drv2605l_go(); // Execute waveform sequence
+	// Check to make sure a current waveform isn't active
+	if (!drv2605l_waveform_active()) {
+		// Retrieve the current waveform
+		uint8_t *waveform = get_navigation_waveform();
+		int i;
+
+		// Loop through and set all 8 sequence registers
+		for (i = 0; i < 8; i++) {
+			drv2605l_set_waveform(i, waveform[i]);
+		}
+		drv2605l_go(); // Execute waveform sequence
+	}
 }
 
 /**

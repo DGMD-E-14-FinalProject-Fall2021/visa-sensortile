@@ -50,6 +50,7 @@
 #include "uuid_ble_service.h"
 #include "app_US100.h"
 #include "app_DRV2605L.h"
+#include "hand_navigation.h"
 
 /* Exported variables ---------------------------------------------------------*/
 int connected = FALSE;
@@ -748,29 +749,27 @@ void Attribute_Modified_CB(uint16_t attr_handle, uint8_t * att_data, uint8_t dat
     }
   }
   else if (attr_handle == EnvironmentalCharHandle + 5) {
-  	if (att_data[0] == 01)
-  	{
-  		W2ST_ON_CONNECTION(W2ST_CONNECT_HAPTIC);
 
+  	if (att_data[0] == 0) {
 
-  		/* Start the TIM Base generation in interrupt mode */
-  		if(HAL_TIM_OC_Start_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
-  		{
-  			/* Starting Error */
-  			Error_Handler();
-  		}
+  		W2ST_OFF_CONNECTION(W2ST_CONNECT_HAPTIC);
 
-  		/* Set the new Capture compare value */
-  		{
-  			uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim8CCHandle);
-  			/* Set the Capture Compare Register value */
-  			__HAL_TIM_SET_COMPARE(&Tim8CCHandle, TIM_CHANNEL_4, (uhCapture + uhCCR4_Val));
-  		}
+  		/* Stop the TIM Base generation in interrupt mode */
+			if(HAL_TIM_OC_Stop_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
+			{
+				/* Stopping Error */
+				Error_Handler();
+			}
+
+			return;
   	}
-	  else if (att_data[0] == 0)
-		{
-			W2ST_OFF_CONNECTION(W2ST_CONNECT_HAPTIC);
 
+
+		W2ST_ON_CONNECTION(W2ST_CONNECT_HAPTIC);
+
+		/* Check the TIM channel state */
+		if (TIM_CHANNEL_STATE_GET(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_TIM_CHANNEL_STATE_READY)
+		{
 			/* Stop the TIM Base generation in interrupt mode */
 			if(HAL_TIM_OC_Stop_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
 			{
@@ -778,7 +777,44 @@ void Attribute_Modified_CB(uint16_t attr_handle, uint8_t * att_data, uint8_t dat
 				Error_Handler();
 			}
 		}
-  }
+
+		/* Check to see which direction to move hand */
+		switch(att_data[0]) {
+		case 0x01 :
+			move_hand_right();
+			break;
+		case 0x02 :
+			move_hand_left();
+			break;
+		case 0x03 :
+			move_hand_up();
+			break;
+		case 0x04 :
+			move_hand_down();
+			break;
+		case 0x05 :
+			move_hand_forward();
+			break;
+		case 0x06 :
+			move_hand_back();
+			break;
+		}
+
+		/* Start the TIM Base generation in interrupt mode */
+		if(HAL_TIM_OC_Start_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
+		{
+			/* Starting Error */
+			Error_Handler();
+		}
+
+		/* Set the new Capture compare value */
+		{
+			uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim8CCHandle);
+			/* Set the Capture Compare Register value */
+			__HAL_TIM_SET_COMPARE(&Tim8CCHandle, TIM_CHANNEL_4, (uhCapture + uhCCR4_Val));
+		}
+	}
+
   else if(attr_handle == StdErrCharHandle + 2)
   {
     if (att_data[0] == 01) 
