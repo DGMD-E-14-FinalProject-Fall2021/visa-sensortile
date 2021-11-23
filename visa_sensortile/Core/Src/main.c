@@ -42,14 +42,16 @@
 */
 
 /* Includes ------------------------------------------------------------------*/
+#include <DRV2605L.h>
 #include <stdio.h>
 #include <math.h>
 #include <limits.h>
+#include <US100.h>
 #include "TargetFeatures.h"
 #include "main.h"
 #include "sensor_service.h"
 #include "bluenrg_utils.h"
-#include "app_US100.h"
+#include "hand_navigation.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -69,19 +71,22 @@ uint32_t ConnectionBleStatus  =0;
 uint8_t BufferToWrite[256];
 int32_t BytesToWrite;
 
-TIM_HandleTypeDef TimCCHandle;
+TIM_HandleTypeDef Tim1CCHandle;
+TIM_HandleTypeDef Tim8CCHandle;
 
 uint8_t bdaddr[6];
 
 UART_HandleTypeDef huart5;
 DMA_HandleTypeDef hdma_uart5_rx;
 
+I2C_HandleTypeDef hi2c3;
+
 /* Private variables ---------------------------------------------------------*/
 static volatile uint32_t SendEnv = 0;
+static volatile uint32_t SendHaptic = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
-
 static void Init_BlueNRG_Custom_Services(void);
 static void Init_BlueNRG_Stack(void);
 static void InitTimers(void);
@@ -89,6 +94,8 @@ static void SendEnvironmentalData(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_UART5_Init(void);
+static void MX_I2C3_Init(void);
+static void send_haptic(void);
 
 //uint8_t CDC_Fill_Buffer(uint8_t* Buf, uint32_t TotalLen){}
 
@@ -146,9 +153,24 @@ int main(void)
   Init_BlueNRG_Custom_Services();  
   
   MX_GPIO_Init();
+
+  /* Initialize DMA and UART for US100 */
   MX_DMA_Init();
   MX_UART5_Init();
   us100_init(&huart5, &hdma_uart5_rx);
+
+  /* Initialize I2C for drv2605l */
+  MX_I2C3_Init();
+  HAL_I2C_Init(&hi2c3);
+
+  /* drv2605l setup */
+  drv2605l_init(&hi2c3); // Initialize the drv2605l with the correct I2C config
+
+ 	drv2605l_set_mode(0x0); // Set mode to internal trigger input
+
+ 	drv2605l_motor_select(0x36); // ERM Motor
+
+ 	drv2605l_set_library(0x02); // Select ERM library. 1-5 & 7 for ERM motors, 6 for LRA motors
 
   /* initialize timers */
   InitTimers();
@@ -194,7 +216,7 @@ int main(void)
       set_connectable = FALSE;
     }
 
-    us100_data_available();
+    us100_data_available(); // Query a request for distance data
     
     /* Environmental Data */
     if(SendEnv) 
@@ -203,9 +225,31 @@ int main(void)
       SendEnvironmentalData();
     }
 
+    /* Haptic feedback */
+    if (SendHaptic) {
+    	SendHaptic = 0;
+    	send_haptic();
+    }
+
     /* Wait for Interrupt */
     __WFI();
   }
+}
+
+static void send_haptic(void) {
+
+	// Check to make sure a current waveform isn't active
+	if (!drv2605l_waveform_active()) {
+		// Retrieve the current waveform
+		uint8_t *waveform = get_navigation_waveform();
+		int i;
+
+		// Loop through and set all 8 sequence registers
+		for (i = 0; i < 8; i++) {
+			drv2605l_set_waveform(i, waveform[i]);
+		}
+		drv2605l_go(); // Execute waveform sequence
+	}
 }
 
 /**
@@ -215,14 +259,6 @@ int main(void)
   */
 static void MX_UART5_Init(void)
 {
-
-  /* USER CODE BEGIN UART5_Init 0 */
-
-  /* USER CODE END UART5_Init 0 */
-
-  /* USER CODE BEGIN UART5_Init 1 */
-
-  /* USER CODE END UART5_Init 1 */
   huart5.Instance = UART5;
   huart5.Init.BaudRate = 9600;
   huart5.Init.WordLength = UART_WORDLENGTH_8B;
@@ -237,10 +273,40 @@ static void MX_UART5_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN UART5_Init 2 */
+}
 
-  /* USER CODE END UART5_Init 2 */
-
+/**
+  * @brief I2C3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C3_Init(void)
+{
+  hi2c3.Instance = I2C3;
+  hi2c3.Init.Timing = 0x10909CEC;
+  hi2c3.Init.OwnAddress1 = 0;
+  hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c3.Init.OwnAddress2 = 0;
+  hi2c3.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /**
@@ -283,12 +349,20 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
   uint32_t uhCapture=0;
   
   /* TIM1_CH1 toggling with frequency = 20Hz */
-  if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
-  {
+  if (htim->Instance == TIM1 &&
+  		htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
     uhCapture = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
     /* Set the Capture Compare Register value */
-    __HAL_TIM_SET_COMPARE(&TimCCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
+    __HAL_TIM_SET_COMPARE(&Tim1CCHandle, TIM_CHANNEL_1, (uhCapture + uhCCR1_Val));
     SendEnv=1;
+  }
+  /* TIM8_CH4 toggling with frequency = 20 Hz */
+  if (htim->Instance == TIM8 &&
+  		htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4) {
+  	uhCapture = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_4);
+  	/* Set the Capture Compare Register value */
+  	__HAL_TIM_SET_COMPARE(&Tim8CCHandle, TIM_CHANNEL_4, (uhCapture + uhCCR4_Val));
+  	SendHaptic = 1;
   }
 }
 
@@ -299,7 +373,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if(htim == (&TimHandle)) 
+  if(htim == (&TimHandle))
   {
     CDC_TIM_PeriodElapsedCallback(htim);
   }
@@ -408,27 +482,7 @@ static void SendEnvironmentalData(void)
       }
 #endif /* ENABLE_USB_DEBUG_NOTIFY_TRAMISSION */      
     } 
-    else if(TargetBoardFeatures.NumTempSensors==1)
-    {
-//      if (BSP_ENV_SENSOR_GetValue(HTS221_0, ENV_TEMPERATURE,(float *)&SensorValue)!=BSP_ERROR_NONE)
-//      {
-//        BSP_ENV_SENSOR_GetValue(LPS22HB_0, ENV_TEMPERATURE,(float *)&SensorValue);
-//      }
-//      MCR_BLUEMS_F2I_1D(SensorValue, intPart, decPart);
-//      Temp1ToSend = intPart*10+decPart;
-#ifdef ENABLE_USB_DEBUG_NOTIFY_TRAMISSION
-      if(W2ST_CHECK_CONNECTION(W2ST_CONNECT_STD_TERM))
-      {
-        BytesToWrite = sprintf((char *)BufferToWrite,"Temp1=%d ",Temp1ToSend);
-        Term_Update(BufferToWrite,BytesToWrite);
-      }
-      else
-      {
-        STLBLE_PRINTF("Temp1=%d ",Temp1ToSend);
-      }
-#endif /* ENABLE_USB_DEBUG_NOTIFY_TRAMISSION */
-      
-    }
+
     Environmental_Update(PressToSend,HumToSend,Temp2ToSend,Temp1ToSend);
   }
   
@@ -457,37 +511,57 @@ static void InitTimers(void)
   uint32_t uwPrescalerValue;
   
   /* Timer Output Compare Configuration Structure declaration */
-  TIM_OC_InitTypeDef sConfig;
+  TIM_OC_InitTypeDef Tim1sConfig;
+  TIM_OC_InitTypeDef Tim8sConfig;
   
   /* Compute the prescaler value to have TIM3 counter clock equal to 10 KHz */
   uwPrescalerValue = (uint32_t) ((SystemCoreClock / 10000) - 1); 
   
-  /* Set TIM1 instance (Motion)*/
+  /* Set TIM1 instance (Distance) */
   /* Set TIM1 instance */
-  TimCCHandle.Instance = TIM1;
-  TimCCHandle.Init.Period        = 65535;
-  TimCCHandle.Init.Prescaler     = uwPrescalerValue;
-  TimCCHandle.Init.ClockDivision = 0;
-  TimCCHandle.Init.CounterMode   = TIM_COUNTERMODE_UP;
-  if(HAL_TIM_OC_Init(&TimCCHandle) != HAL_OK)
-  {
+  Tim1CCHandle.Instance = TIM1;
+  Tim1CCHandle.Init.Period        = 65535;
+  Tim1CCHandle.Init.Prescaler     = uwPrescalerValue;
+  Tim1CCHandle.Init.ClockDivision = 0;
+  Tim1CCHandle.Init.CounterMode   = TIM_COUNTERMODE_UP;
+  if (HAL_TIM_OC_Init(&Tim1CCHandle) != HAL_OK) {
     /* Initialization Error */
     Error_Handler();
   }
   
+  /* Set TIM8 instance (haptic) */
+  Tim8CCHandle.Instance = TIM8;
+  Tim8CCHandle.Init.Period = 65535;
+  Tim8CCHandle.Init.Prescaler = uwPrescalerValue;
+  Tim8CCHandle.Init.ClockDivision = 0;
+  Tim8CCHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
+  if (HAL_TIM_OC_Init(&Tim8CCHandle) != HAL_OK) {
+  	/* Initialize Error */
+  	Error_Handler();
+  }
+
   /* Configure the Output Compare channels */
   /* Common configuration for all channels */
-  sConfig.OCMode     = TIM_OCMODE_TOGGLE;
-  sConfig.OCPolarity = TIM_OCPOLARITY_LOW;
+  Tim1sConfig.OCMode     = TIM_OCMODE_TOGGLE;
+  Tim1sConfig.OCPolarity = TIM_OCPOLARITY_LOW;
   
-  /* Output Compare Toggle Mode configuration: Channel1 */
-  sConfig.Pulse = uhCCR1_Val;
-  if(HAL_TIM_OC_ConfigChannel(&TimCCHandle, &sConfig, TIM_CHANNEL_1) != HAL_OK)
+  Tim8sConfig.OCMode = TIM_OCMODE_TOGGLE;
+  Tim8sConfig.OCNPolarity = TIM_OCPOLARITY_LOW;
+
+  /* TIM1 Output Compare Toggle Mode configuration: Channel1 */
+  Tim1sConfig.Pulse = uhCCR1_Val;
+  if(HAL_TIM_OC_ConfigChannel(&Tim1CCHandle, &Tim1sConfig, TIM_CHANNEL_1) != HAL_OK)
   {
     /* Configuration Error */
     Error_Handler();
   }  
   
+  /* TIM8 Output compare Toggle Mode configuration: Channel1 */
+  Tim8sConfig.Pulse = uhCCR4_Val;
+  if (HAL_TIM_OC_ConfigChannel(&Tim8CCHandle, &Tim8sConfig, TIM_CHANNEL_4) != HAL_OK) {
+  	/* Configuraiton error */
+  	Error_Handler();
+  }
 }
 
 /** @brief Initialize the BlueNRG Stack

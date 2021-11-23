@@ -250,9 +250,16 @@ void HAL_TIM_OC_MspInit(TIM_HandleTypeDef *htim)
   /* TIM1 Peripheral clock enable */
   __HAL_RCC_TIM1_CLK_ENABLE();
 
+  /* TIM* Peripheral clock enable */
+  __HAL_RCC_TIM8_CLK_ENABLE();
+
   /* Enable TIM1 global Interrupt & set priority  */
   HAL_NVIC_SetPriority(TIM1_CC_IRQn, 0x8, 0);
   HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
+
+  /* Enable TIM8 global Interrupt & set priority 8 */
+  HAL_NVIC_SetPriority(TIM8_CC_IRQn, 0x9, 0);
+  HAL_NVIC_EnableIRQ(TIM8_CC_IRQn);
 }
 
 /**
