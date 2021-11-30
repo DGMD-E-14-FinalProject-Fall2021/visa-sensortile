@@ -604,11 +604,11 @@ static void Init_BlueNRG_Stack(void)
 #ifndef STATIC_BLE_MAC
   /* Create a Unique BLE MAC */
   {
-    bdaddr[0] = (STM32_UUID[1]>>24)&0xFF;
-    bdaddr[1] = (STM32_UUID[0]    )&0xFF;
-    bdaddr[2] = (STM32_UUID[2] >>8)&0xFF;
-    bdaddr[3] = (STM32_UUID[0]>>16)&0xFF;
-    bdaddr[4] = (((STLBLE_VERSION_MAJOR-48)*10) + (STLBLE_VERSION_MINOR-48)+100)&0xFF;
+    bdaddr[0] = 0xAA;
+    bdaddr[1] = 0xAA;
+    bdaddr[2] = 0xAA;
+    bdaddr[3] = 0xBB;
+    bdaddr[4] = 0xCC;
     bdaddr[5] = 0xC0; /* for a Legal BLE Random MAC */
   }
 #else /* STATIC_BLE_MAC */
