@@ -6,6 +6,9 @@
 - **/datasheets** - Datasheets for all hardware utilized in VISA SensorTile
 - **VISA SensorTile tutorial.pdf/.docx** - Tutorial on how to setup hardware and project. Directions on how to interact with it over bluetooth low energy.
 
+***SensorTile Mac Address***
+The MAC address of the SensorTile is a random static address of C0:CC:BB:AA:AA:AA.
+
 ***BLE API***
 ---
 
