@@ -14,11 +14,13 @@ The MAC address of the SensorTile is a random static address of C0:CC:BB:AA:AA:A
 ---
 
 ***Distance data characteristic value handle***<br/>
+UUID: 00140000-0001-11e1-ac36-0002a5d5c51b<br/>
 Characteristic Handle: 000E<br/>
 Characteristic Value: Timestamp (2 bytes), pressure (4 bytes), distance (2 bytes)<br/> 
 Characteristic Value Format: Little endian<br/>
 
 ***Client characteristic configuration handle for distance data transmission.***<br/> 
+UUID: 00002902-0000-1000-8000-00805f9b34fb<br/>
 Characteristic Handle: 000F<br/>
 
 | Value       | Result      |
@@ -27,6 +29,7 @@ Characteristic Handle: 000F<br/>
 | 0000  | Turns off distance data transmission  |
 
 ***Client characteristic configuration handle for haptic feedback.***<br/> 
+UUID: 00002902-0000-1000-8000-00805f9b34fb<br/>
 Characteristic Handle: 0012<br/>
 
 | Value       | Result      |
