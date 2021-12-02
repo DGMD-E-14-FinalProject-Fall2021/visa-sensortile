@@ -116,9 +116,7 @@ used in Console service */
 /* Environmental Data */
 #define W2ST_CONNECT_ENV           (1    )
 /* Haptic control */
-#define W2ST_CONNECT_HAPTIC           (1<<1 )
-/* LED status */
-#define W2ST_CONNECT_LED  (1<<2 )
+#define W2ST_CONNECT_HAPTIC           (1<<2 )
 
 /* Standard Terminal */
 #define W2ST_CONNECT_STD_TERM      (1<<8 )
