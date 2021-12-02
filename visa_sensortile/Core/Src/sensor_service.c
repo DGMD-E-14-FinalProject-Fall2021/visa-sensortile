@@ -379,23 +379,11 @@ tBleStatus Add_HWServW2ST_Service(void)
   
   /* Fill the Haptic BLE characteristic */
   COPY_HAPTIC_W2ST_CHAR_UUID(uuid);
-
-  ret = aci_gatt_add_char(HWServW2STHandle, UUID_TYPE_128, uuid, 4,
-  												CHAR_PROP_NOTIFY|CHAR_PROP_READ,
-													ATTR_PERMISSION_NONE,
-													GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
-													16,0, &HapticCharHandle);
-
-  if (ret != BLE_STATUS_SUCCESS) {
-  	goto fail;
-  }
-
-  COPY_LED_W2ST_CHAR_UUID(uuid);
   ret =  aci_gatt_add_char(HWServW2STHandle, UUID_TYPE_128, uuid, 2+1,
                            CHAR_PROP_NOTIFY | CHAR_PROP_READ,
                            ATTR_PERMISSION_NONE,
                            GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
-                           16, 0, &LedCharHandle);
+                           16, 0, &HapticCharHandle);
   
   if (ret != BLE_STATUS_SUCCESS) 
   {
@@ -680,11 +668,6 @@ void Read_Request_CB(uint16_t handle)
     
     Environmental_Update(PressToSend,HumToSend,Temp2ToSend,Temp1ToSend);
   } 
-  else if(handle == LedCharHandle + 1)
-  {
-    /* Read Request for Led Status */
-    LED_Update(TargetBoardFeatures.LedStatus);
-  }
   else if (handle == StdErrCharHandle + 1) 
   {
     /* Send again the last packet for StdError */
@@ -748,73 +731,72 @@ void Attribute_Modified_CB(uint16_t attr_handle, uint8_t * att_data, uint8_t dat
       }
     }
   }
-  else if (attr_handle == EnvironmentalCharHandle + 5) {
+  else if (attr_handle == HapticCharHandle + 2) {
 
   	if (att_data[0] == 0) {
 
-  		W2ST_OFF_CONNECTION(W2ST_CONNECT_HAPTIC);
+  	  W2ST_OFF_CONNECTION(W2ST_CONNECT_HAPTIC);
 
-  		/* Stop the TIM Base generation in interrupt mode */
-			if(HAL_TIM_OC_Stop_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
-			{
-				/* Stopping Error */
-				Error_Handler();
-			}
+  	  /* Stop the TIM Base generation in interrupt mode */
+  		if(HAL_TIM_OC_Stop_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
+  		{
+  			/* Stopping Error */
+  			Error_Handler();
+  		}
 
-			return;
+  		return;
   	}
 
 
-		W2ST_ON_CONNECTION(W2ST_CONNECT_HAPTIC);
+  	W2ST_ON_CONNECTION(W2ST_CONNECT_HAPTIC);
 
-		/* Check the TIM channel state */
-		if (TIM_CHANNEL_STATE_GET(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_TIM_CHANNEL_STATE_READY)
-		{
-			/* Stop the TIM Base generation in interrupt mode */
-			if(HAL_TIM_OC_Stop_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
+  	/* Check the TIM channel state */
+  	if (TIM_CHANNEL_STATE_GET(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_TIM_CHANNEL_STATE_READY)
+  	{
+  		/* Stop the TIM Base generation in interrupt mode */
+  		if(HAL_TIM_OC_Stop_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
+  		{
+  			/* Stopping Error */
+  			Error_Handler();
+  			}
+  		}
+
+  		/* Check to see which direction to move hand */
+  		switch(att_data[0]) {
+  		case 0x01 :
+  			move_hand_right();
+  			break;
+  		case 0x02 :
+  			move_hand_left();
+  			break;
+  		case 0x03 :
+  			move_hand_up();
+  			break;
+  		case 0x04 :
+  			move_hand_down();
+  			break;
+  		case 0x05 :
+  			move_hand_forward();
+  			break;
+  		case 0x06 :
+  				move_hand_back();
+				break;
+			}
+
+			/* Start the TIM Base generation in interrupt mode */
+			if(HAL_TIM_OC_Start_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
 			{
-				/* Stopping Error */
+				/* Starting Error */
 				Error_Handler();
 			}
-		}
 
-		/* Check to see which direction to move hand */
-		switch(att_data[0]) {
-		case 0x01 :
-			move_hand_right();
-			break;
-		case 0x02 :
-			move_hand_left();
-			break;
-		case 0x03 :
-			move_hand_up();
-			break;
-		case 0x04 :
-			move_hand_down();
-			break;
-		case 0x05 :
-			move_hand_forward();
-			break;
-		case 0x06 :
-			move_hand_back();
-			break;
-		}
-
-		/* Start the TIM Base generation in interrupt mode */
-		if(HAL_TIM_OC_Start_IT(&Tim8CCHandle, TIM_CHANNEL_4) != HAL_OK)
-		{
-			/* Starting Error */
-			Error_Handler();
-		}
-
-		/* Set the new Capture compare value */
-		{
-			uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim8CCHandle);
-			/* Set the Capture Compare Register value */
-			__HAL_TIM_SET_COMPARE(&Tim8CCHandle, TIM_CHANNEL_4, (uhCapture + uhCCR4_Val));
-		}
+			/* Set the new Capture compare value */
+			{
+				uint32_t uhCapture = __HAL_TIM_GET_COUNTER(&Tim8CCHandle);
+				/* Set the Capture Compare Register value */
+				__HAL_TIM_SET_COMPARE(&Tim8CCHandle, TIM_CHANNEL_4, (uhCapture + uhCCR4_Val));
+			}
 	}
-
   else if(attr_handle == StdErrCharHandle + 2)
   {
     if (att_data[0] == 01) 
@@ -836,28 +818,6 @@ void Attribute_Modified_CB(uint16_t attr_handle, uint8_t * att_data, uint8_t dat
     {
       W2ST_OFF_CONNECTION(W2ST_CONNECT_STD_TERM);
     }
-  } 
-  else if(attr_handle == LedCharHandle + 2)
-  {
-    if (att_data[0] == 01) 
-    {
-      W2ST_ON_CONNECTION(W2ST_CONNECT_LED);
-      /* Update the LED feature */
-      LED_Update(TargetBoardFeatures.LedStatus);
-    } 
-    else if (att_data[0] == 0)
-    {
-      W2ST_OFF_CONNECTION(W2ST_CONNECT_LED);
-    }
-#ifdef ENABLE_USB_DEBUG_CONNECTION
-    if(W2ST_CHECK_CONNECTION(W2ST_CONNECT_STD_TERM))
-    {
-      BytesToWrite =sprintf((char *)BufferToWrite,"--->Led=%s\r\n", W2ST_CHECK_CONNECTION(W2ST_CONNECT_LED) ? "ON" : "OFF");
-      Term_Update(BufferToWrite,BytesToWrite);
-    } 
-    else
-      STLBLE_PRINTF("--->Led=%s\r\n", W2ST_CHECK_CONNECTION(W2ST_CONNECT_LED) ? "ON" : "OFF");
-#endif /* ENABLE_USB_DEBUG_CONNECTION */
   } 
   else if (attr_handle == ConfigCharHandle + 1) 
   {
@@ -912,10 +872,6 @@ static void ConfigCommandParsing(uint8_t * att_data, uint8_t data_length)
         LedOffTargetPlatform();
         Config_Notify(FEATURE_MASK_LED,Command,Data);
         break;
-     }
-     /* Update the LED feature */
-     if(W2ST_CHECK_CONNECTION(W2ST_CONNECT_LED)) {
-       LED_Update(TargetBoardFeatures.LedStatus);
      }
     break;
   }
