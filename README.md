@@ -29,8 +29,8 @@ Characteristic Handle: 000F<br/>
 | 0000  | Turns off distance data transmission  |
 
 ***Client characteristic configuration handle for haptic feedback.***<br/> 
-UUID: 00002902-0000-1000-8000-00805f9b34fb<br/>
-Characteristic Handle: 0012<br/>
+UUID: 20000000-0001-11e1-ac36-0002a5d5c51b<br/>
+Characteristic Handle: 0011<br/>
 
 | Value       | Result      |
 | ------------- | ------------- |
