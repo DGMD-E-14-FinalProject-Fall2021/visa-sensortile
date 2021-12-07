@@ -380,9 +380,9 @@ tBleStatus Add_HWServW2ST_Service(void)
   /* Fill the Haptic BLE characteristic */
   COPY_HAPTIC_W2ST_CHAR_UUID(uuid);
   ret =  aci_gatt_add_char(HWServW2STHandle, UUID_TYPE_128, uuid, 2+1,
-                           CHAR_PROP_NOTIFY | CHAR_PROP_READ,
+                           CHAR_PROP_WRITE | CHAR_PROP_NOTIFY | CHAR_PROP_READ,
                            ATTR_PERMISSION_NONE,
-                           GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
+                           GATT_NOTIFY_ATTRIBUTE_WRITE,
                            16, 0, &HapticCharHandle);
   
   if (ret != BLE_STATUS_SUCCESS) 
@@ -731,7 +731,7 @@ void Attribute_Modified_CB(uint16_t attr_handle, uint8_t * att_data, uint8_t dat
       }
     }
   }
-  else if (attr_handle == HapticCharHandle + 2) {
+  else if (attr_handle == HapticCharHandle + 1) {
 
   	if (att_data[0] == 0) {
 
